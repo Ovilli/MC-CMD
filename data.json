@@ -1,0 +1,68 @@
+{
+    "settings": {
+        "prompt_name": "-",
+        "welcome_message": "Welcome to the Overlay Command Interface! Type 'help' to see available commands.",
+        "enable_history": true,
+        "history_file": "cmd_history.txt",
+        "max_history_size": 100,
+        "enable_autocomplete": true,
+        "color": "3"
+    },
+    "aliases": {
+        "ls": "dir",
+        "rm": "remove",
+        "quit": "exit",
+        "cls": "clear",
+        "g": "echo hello"
+    },
+    "commands": {
+        "help": "Display this help message.",
+        "echo": "Echo the input text back to the console.",
+        "clear": "Clear the console screen.",
+        "exit": "Exit the command interface.",
+        "cat": "Display the contents of a file.",
+        "dir": "List files and directories in the current path.",
+        "init": "Initialize the application environment.",
+        "whatami": "Display information about the current environment.",
+        "alias": "Create or display command aliases.",
+        "settings": "View or modify command interface settings."
+    },
+    "usages": {
+        "history": "history <clear>",
+        "mkdir": "mkdir <folder>",
+        "cp": "cp <source> <destination>",
+        "mv": "mv <source> <destination>",
+        "cat": "cat <file>",
+        "ls": "ls [path]",
+        "cd": "cd <dir>",
+        "touch": "touch <file>",
+        "rm": "rm <file>",
+        "alias": "alias <name> <command>",
+        "color": "color [color_code]",
+        "restart": "restart [now]"
+    },
+    "history": [],
+    "version": {
+        "number": "0.9.1",
+        "mycmd": "0.9.8"
+    },
+    "last_updated": "2024-06-15T12:34:56Z",
+    "author": "Ovilli",
+    "license": "MIT",
+    "repository": "",
+    "bugs": "",
+    "homepage": "",
+    "keywords": [],
+    "contributors": [],
+    "dependencies": {},
+    "devDependencies": {},
+    "scripts": {},
+    "engines": {
+        "python": ">=3.7"
+    },
+    "main": "own_cmd/main.py",
+    "type": "module",
+    "description": "A custom command interface for Overlay application.",
+    "license_url": "https://opensource.org/licenses/MIT",
+    "config": {}
+}
