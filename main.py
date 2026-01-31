@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import json
 import sys
@@ -40,6 +41,18 @@ class MyCMD:
             "nano": self.nano,
             "version": self.version,
             "update": self.update,
+            "clipboard": self.clipboard,
+            "date": lambda args: print(subprocess.getoutput("date") if os.name != 'nt' else subprocess.getoutput("echo %date% %time%")),
+            "fc": lambda args: print(subprocess.getoutput("fc " + " ".join(args)) if os.name == 'nt' else subprocess.getoutput("diff " + " ".join(args))),
+            "tree": self.tree,
+            "brake" : lambda args: print("Brake command executed. (no operation)"),
+            "calc": self.calc,
+            "ren": self.rename_file,
+            "title": self.set_name,
+            "type": lambda args: print(subprocess.getoutput("type " + " ".join(args)) if os.name == 'nt' else subprocess.getoutput("cat " + " ".join(args))),
+            "verify": self.verify_command,
+            "reset": self.restore_terminal,
+            "specht": self.specht,
         }
         self.running = True
 
@@ -171,6 +184,125 @@ class MyCMD:
         # Show welcome message if any
         if self.welcome_message:
             print(self.welcome_message)
+
+    def specht(self, args):
+        """A simple text-to-speech command using system TTS capabilities."""
+        if not args:
+            print("Usage: specht [text to speak]")
+            return
+        text = " ".join(args)
+        try:
+            if os.name == 'nt':
+                # Windows TTS using PowerShell
+                command = f'Add-Type –AssemblyName System.Speech; $speech = New-Object System.Speech.Synthesis.SpeechSynthesizer; $speech.Speak("{text}")'
+                subprocess.run(["powershell", "-Command", command], check=True)
+            else:
+                # Linux/macOS TTS using espeak
+                subprocess.run(["espeak", text], check=True)
+        except Exception as e:
+            print(f"specht: error speaking text: {e}")
+
+    def verify_command(self, args):
+        """Verify if a command exists in the shell."""
+        if not args:
+            print("Usage: verify [command_name]")
+            return
+        cmd_name = args[0]
+        if cmd_name in self.commands:
+            print(f"Command '{cmd_name}' exists in the shell.")
+        else:
+            print(f"Command '{cmd_name}' does NOT exist in the shell.")
+
+
+    def rename_file(self, args):
+        if len(args) != 2:
+            print("Usage: ren [source] [destination]")
+            return
+        src, dst = args
+        try:
+            os.rename(src, dst)
+        except FileNotFoundError:
+            print(f"ren: cannot stat '{src}': No such file or directory")
+        except Exception as e:
+            print(f"ren: {e}")
+
+
+    def calc(self, args):
+        """Simple calculator command using eval(). Usage: calc [expression]"""
+        if not args:
+            print("Usage: calc [expression]")
+            return
+        expression = " ".join(args)
+        try:
+            # Evaluate the expression safely
+            allowed_names = {
+                'abs': abs,
+                'round': round,
+                'min': min,
+                'max': max,
+                'pow': pow
+            }
+            result = eval(expression, {"__builtins__": None}, allowed_names)
+            print(result)
+        except Exception as e:
+            print(f"calc: error evaluating expression: {e}")
+
+    def tree(self, args):
+        """Display directory tree structure."""
+        start_path = args[0] if args else "."
+        if not os.path.exists(start_path):
+            print(f"tree: {start_path}: No such file or directory")
+            return
+
+        def _tree(dir_path, prefix=""):
+            try:
+                entries = os.listdir(dir_path)
+            except Exception as e:
+                print(f"{prefix}Error accessing {dir_path}: {e}")
+                returnc
+            entries_count = len(entries)
+            for index, entry in enumerate(sorted(entries)):
+                path = os.path.join(dir_path, entry)
+                connector = "└── " if index == entries_count - 1 else "├── "
+                print(f"{prefix}{connector}{entry}")
+                if os.path.isdir(path):
+                    extension = "    " if index == entries_count - 1 else "│   "
+                    _tree(path, prefix + extension)
+
+        print(start_path)
+        _tree(start_path)
+
+
+    def clipboard(self, args):
+        """Copy text to clipboard or paste from clipboard."""
+        if not args:
+            print("Usage: clipboard copy [text] | paste")
+            return
+        action = args[0].lower()
+        try:
+            import pyperclip
+        except ImportError:
+            print("clipboard: pyperclip module not installed. Install it via 'pip install pyperclip'.")
+            return
+
+        if action == "copy":
+            if len(args) < 2:
+                print("clipboard copy: missing text to copy.")
+                return
+            text_to_copy = " ".join(args[1:])
+            try:
+                pyperclip.copy(text_to_copy)
+                print("Text copied to clipboard.")
+            except Exception as e:
+                print(f"clipboard copy: failed to copy text: {e}")
+        elif action == "paste":
+            try:
+                pasted_text = pyperclip.paste()
+                print(pasted_text)
+            except Exception as e:
+                print(f"clipboard paste: failed to paste text: {e}")
+        else:
+            print("clipboard: unknown action. Use 'copy' or 'paste'.")
 
 
     def update(self, args):
@@ -691,8 +823,10 @@ class MyCMD:
                     try:
                         user_input = self.ptk_session.prompt(f"{self.name}> ", completer=self.ptk_completer, bottom_toolbar=self._pt_toolbar, complete_while_typing=True, complete_style=self._pt_complete_style).strip()
                     except KeyboardInterrupt:
-                        print(f"\nUse 'exit' to quit {self.name}.")
-                        continue
+                        # Exit the shell immediately on Ctrl+C
+                        print()
+                        self.exit([])
+                        break
                     except EOFError:
                         print()
                         break
@@ -738,7 +872,10 @@ class MyCMD:
                     except Exception:
                         pass
             except KeyboardInterrupt:
-                print(f"\nUse 'exit' to quit {self.name}.")
+                # Exit the shell immediately on Ctrl+C
+                print()
+                self.exit([])
+                break
 
 
 if __name__ == "__main__":
